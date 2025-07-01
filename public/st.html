@@ -1,0 +1,1217 @@
+<body>
+    <!-- 🔐 로그인/회원가입 화면 -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-container"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VVCKD ROOM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'DungGeunMo';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2204@1.0/DungGeunMo.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #000;
+            color: #ff6600;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 10px;
+            color: #ff6600;
+        }
+
+        .user-role {
+            color: #ffff00;
+            margin-left: 10px;
+        }
+
+        .create-room-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: none;
+        }
+
+        .create-room-btn {
+            background: #ff6600;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .create-room-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 20px #ff6600;
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            color: #ff6600;
+            text-shadow: 0 0 5px #ff6600, 0 0 10px #ff6600, 0 0 20px #ff6600;
+        }
+
+        .cursor {
+            display: inline-block;
+            animation: blink 1s step-start 0s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .chat-hub {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .chat-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .chat-room {
+            position: relative;
+            border: 1px solid #ff6600;
+            padding: 10px;
+            cursor: pointer;
+            width: 400px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #000;
+            transition: all 0.3s;
+        }
+
+        .chat-room:hover {
+            background-color: #ff6600;
+            color: #000;
+        }
+
+        .chat-title {
+            flex: 1;
+            margin-right: 6px;
+        }
+
+        .chat-time {
+            background-color: #ff6600;
+            color: #000;
+            font-size: 8px;
+            padding: 2px 4px;
+            white-space: nowrap;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .chat-room:hover .chat-time {
+            background-color: #000;
+            color: #ff6600;
+        }
+
+        .preview {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #111;
+            color: #ff6600;
+            font-family: 'Press Start 2P', monospace;
+            padding: 8px;
+            border: 1px solid #ff6600;
+            z-index: 100;
+            white-space: pre-line;
+            width: 400px;
+            font-size: 8px;
+        }
+
+        .chat-room:hover .preview {
+            display: block;
+        }
+
+        /* 채팅 화면 */
+        .chat-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .chat-header-bar {
+            background: #000;
+            border-bottom: 2px solid #ff6600;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-info {
+            color: #ff6600;
+            font-size: 12px;
+        }
+
+        .back-btn {
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #000;
+            scrollbar-width: thin;
+            scrollbar-color: #ff6600 #000;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #ff6600;
+            border-radius: 4px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-in;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            0% { 
+                opacity: 0; 
+                transform: translateX(-10px);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateX(0);
+            }
+        }
+
+        .message-header {
+            color: #ff6600;
+            font-size: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .message-content {
+            background: #000;
+            padding: 10px;
+            color: #fff;
+            font-size: 10px;
+            line-height: 14px;
+            word-wrap: break-word;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .message.own .message-content {
+            background: #330000;
+            color: #ff6600;
+        }
+
+        .message-file {
+            margin-top: 10px;
+            border: 1px solid #ff6600;
+            padding: 10px;
+            background: #111;
+        }
+
+        .message-file img {
+            max-width: 300px;
+            max-height: 200px;
+            border: 1px solid #ff6600;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .message-file audio {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .file-info {
+            color: #ffff00;
+            font-size: 8px;
+            text-align: center;
+        }
+
+        /* 파일 다운로드 버튼 스타일 */
+        .download-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 4px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            background: #fff;
+            color: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        .download-btn:disabled {
+            background: #666;
+            color: #333;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .download-btn:disabled:hover {
+            background: #666;
+            color: #333;
+            box-shadow: none;
+        }
+
+        .file-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .download-btn:disabled {
+            background: #666;
+            color: #333;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .download-btn:disabled:hover {
+            background: #666;
+            color: #333;
+            box-shadow: none;
+        }
+
+        .disabled-file-notice {
+            color: #ff0000;
+            font-size: 7px;
+            text-align: center;
+            margin-top: 3px;
+            display: none;
+        }
+
+        .system-message {
+            text-align: center;
+            color: #ffff00;
+            font-size: 10px;
+            margin: 10px 0;
+            opacity: 0.8;
+        }
+
+        /* 삭제 버튼 스타일 */
+        .delete-btn {
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            padding: 2px 6px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s;
+            opacity: 0;
+        }
+
+        .message.own:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: #fff;
+            color: #ff0000;
+            box-shadow: 0 0 5px #ff0000;
+        }
+
+        .deleted-message {
+            opacity: 0.5;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .deleted-message .message-content {
+            background: #222;
+            color: #666;
+            font-style: italic;
+        }
+
+        .input-terminal {
+            border-top: 2px solid #ff6600;
+            background: #000;
+            padding: 25px;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 40px;
+        }
+
+        .file-upload-section {
+            display: flex;
+            gap: 5px; /* 기본적으로 약간의 간격 */
+            align-items: center;
+            transition: gap 0.3s ease;
+        }
+
+        .file-upload-section.has-file {
+            gap: 15px;
+        }
+
+        .upload-options {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-options.show {
+            width: 200px;
+            opacity: 1;
+        }
+
+        .download-disable-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #ffff00;
+            font-size: 8px;
+        }
+
+        .download-disable-checkbox {
+            width: 12px;
+            height: 12px;
+            accent-color: #ff6600;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-btn {
+            background: #ff6600;
+            color: #000;
+            border: none;
+            padding: 15px 25px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 10px #ff6600;
+        }
+
+        .file-preview {
+            color: #ffff00;
+            font-size: 8px;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .prompt {
+            color: #ff6600;
+            font-size: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            outline: none;
+            padding: 12px;
+            border-bottom: 2px solid #ff6600;
+        }
+
+        .input-field::placeholder {
+            color: #666;
+        }
+
+        .send-btn {
+            background: #ff6600;
+            color: #000;
+            border: none;
+            padding: 15px 25px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 10px #ff6600;
+        }
+
+        /* 로그인 모달 */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-terminal {
+            background: #000;
+            border: 2px solid #ff6600;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-title {
+            color: #ff6600;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .login-subtitle {
+            color: #fff;
+            font-size: 10px;
+            margin-bottom: 15px;
+        }
+
+        .login-input {
+            background: transparent;
+            border: 1px solid #ff6600;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            padding: 10px;
+            margin-bottom: 30px;
+            width: 250px;
+            text-align: center;
+        }
+
+        .login-btn {
+            background: #ff6600;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .chat-hub {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .chat-room {
+                width: 300px;
+            }
+            
+            .preview {
+                width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 사용자 정보 -->
+    <div class="user-info">
+        USER: <span id="currentUser">GUEST</span>
+        <span class="user-role" id="userRole">[MEMBER]</span>
+    </div>
+
+    <!-- CREATE ROOM 버튼 -->
+    <div class="create-room-section" id="createSection">
+        <button class="create-room-btn" id="createRoomBtn">CREATE ROOM</button>
+    </div>
+
+    <!-- 메인 로비 화면 -->
+    <div id="lobbyView">
+        <div class="chat-header">
+            <h1>VVCKD ROOM <span class="cursor">▌</span></h1>
+        </div>
+        
+        <div class="chat-hub">
+            <div class="chat-column" id="leftColumn">
+                <!-- 왼쪽 컬럼 방들 -->
+            </div>
+            <div class="chat-column" id="rightColumn">
+                <!-- 오른쪽 컬럼 방들 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 채팅 화면 -->
+    <div class="chat-view" id="chatView">
+        <div class="chat-header-bar">
+            <div class="room-info">
+                ROOM: <span id="currentRoomName">NONE</span> | USERS: <span id="roomUserCount">0</span>
+            </div>
+            <button class="back-btn" id="backToLobbyBtn">LEAVE ROOM</button>
+        </div>
+        
+        <div class="chat-area">
+            <div class="messages-container" id="messages"></div>
+        </div>
+        
+        <div class="input-terminal">
+            <div class="input-line">
+                <span class="prompt">MSG@VVCKD:~$</span>
+                <input type="text" class="input-field" id="messageInput" placeholder="ENTER MESSAGE..." disabled>
+                <div class="file-upload-section">
+                    <input type="file" class="file-input" id="fileInput" accept="image/*,audio/*" disabled>
+                    <button class="file-btn" id="fileBtn" disabled>FILE</button>
+                    <div class="upload-options" id="uploadOptions">
+                        <div class="file-preview" id="filePreview"></div>
+                        <div class="download-disable-option" id="downloadOption">
+                            <input type="checkbox" class="download-disable-checkbox" id="downloadDisableCheckbox">
+                            <label for="downloadDisableCheckbox">DISABLE DOWNLOAD</label>
+                        </div>
+                    </div>
+                    <button class="send-btn" id="sendButton" disabled>SEND</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로그인 모달 -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-terminal">
+            <div class="login-title">ACCESS TERMINAL</div>
+            <div class="login-subtitle">ENTER USER CREDENTIALS</div>
+            <input type="text" class="login-input" id="usernameInput" placeholder="USERNAME" maxlength="20">
+            <br>
+            <button class="login-btn" id="joinButton">INITIALIZE CONNECTION</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Socket.IO 로드 확인
+        if (typeof io === 'undefined') {
+            alert('Socket.IO가 로드되지 않았습니다. 서버를 확인해주세요.');
+            throw new Error('Socket.IO not loaded');
+        }
+
+        // Socket 연결
+        const socket = io();
+        let currentUser = '';
+        let currentRoom = '';
+        let userRole = 'member';
+        
+        // DOM 요소들
+        const loginModal = document.getElementById('loginModal');
+        const usernameInput = document.getElementById('usernameInput');
+        const joinButton = document.getElementById('joinButton');
+        const lobbyView = document.getElementById('lobbyView');
+        const chatView = document.getElementById('chatView');
+        const leftColumn = document.getElementById('leftColumn');
+        const rightColumn = document.getElementById('rightColumn');
+        const createSection = document.getElementById('createSection');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const fileInput = document.getElementById('fileInput');
+        const fileBtn = document.getElementById('fileBtn');
+        const filePreview = document.getElementById('filePreview');
+        const downloadOption = document.getElementById('downloadOption');
+        const downloadDisableCheckbox = document.getElementById('downloadDisableCheckbox');
+        const uploadOptions = document.getElementById('uploadOptions');
+        const fileUploadSection = document.querySelector('.file-upload-section');
+        const currentUserSpan = document.getElementById('currentUser');
+        const userRoleSpan = document.getElementById('userRole');
+        const currentRoomNameSpan = document.getElementById('currentRoomName');
+        const roomUserCountSpan = document.getElementById('roomUserCount');
+        const backToLobbyBtn = document.getElementById('backToLobbyBtn');
+
+        // 파일 관련 변수
+        let selectedFile = null;
+
+        // 관리자 계정 목록
+        const adminUsers = ['ADMIN', 'VVCKD', 'MANAGER'];
+
+        // 시간 차이 계산 함수 (방 목록용)
+        function getTimeAgo(timestamp) {
+            if (!timestamp) return 'now';
+            
+            const now = new Date();
+            const messageTime = new Date(timestamp);
+            const diffMs = now - messageTime;
+            const diffSeconds = Math.floor(diffMs / 1000);
+            const diffMinutes = Math.floor(diffSeconds / 60);
+            const diffHours = Math.floor(diffMinutes / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffDays > 0) {
+                return diffDays + 'd';
+            } else if (diffHours > 0) {
+                return diffHours + 'hr';
+            } else if (diffMinutes > 0) {
+                return diffMinutes + 'min';
+            } else {
+                return 'now';
+            }
+        }
+
+        // 시간 포맷팅 함수 (새 메시지용)
+        function formatTime(timestamp) {
+            const messageTime = new Date(timestamp);
+            return messageTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Socket 연결 및 이벤트 리스너 등록
+        socket.on('connect', () => {
+            console.log('✅ Connected to server');
+            console.log('Socket ID:', socket.id);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('❌ Disconnected from server');
+        });
+
+        // 연결 테스트
+        socket.on('test message', (message) => {
+            console.log('🧪 Test message received:', message);
+        });
+
+        // 방 참여 확인
+        socket.on('room user count', (data) => {
+            console.log('👥 Room user count updated:', data.count);
+            const maxUsersDisplay = roomUserCountSpan.getAttribute('data-max-users') || '';
+            roomUserCountSpan.textContent = `${data.count}${maxUsersDisplay}`;
+        });
+
+        // 실시간 채팅 메시지 받기 (이전 메시지도 포함)
+        socket.on('chat message', (data) => {
+            console.log('📨 Received message data:', data);
+            console.log('📨 isPrevious flag:', data.isPrevious);
+            console.log('📨 Original timestamp:', data.timestamp);
+            
+            if (data.isPrevious) {
+                console.log(`📜 Restoring previous message: ${data.message}`);
+            } else {
+                console.log(`📨 Received new chat message: ${data.message}`);
+            }
+            addMessageToChat(data);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        // 메시지 삭제 성공
+        socket.on('message deleted', (data) => {
+            console.log('🗑️ Message deleted:', data.messageId);
+            const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+            if (messageElement) {
+                messageElement.classList.add('deleted-message');
+                setTimeout(() => {
+                    messageElement.remove();
+                }, 300);
+            }
+        });
+
+        // 삭제 성공 알림
+        socket.on('delete success', (data) => {
+            console.log('✅ Delete successful:', data.messageId);
+        });
+
+        // 삭제 오류
+        socket.on('delete error', (data) => {
+            console.log('❌ Delete error:', data.message);
+            alert('삭제 실패: ' + data.message);
+        });
+
+        // 메시지 삭제 함수
+        function deleteMessage(messageId) {
+            if (confirm('이 메시지를 삭제하시겠습니까?')) {
+                console.log('🗑️ Deleting message:', messageId);
+                socket.emit('delete message', { 
+                    roomName: currentRoom, 
+                    messageId: messageId 
+                });
+            }
+        }
+
+        // 메시지를 채팅에 추가하는 공통 함수
+        function addMessageToChat(data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.setAttribute('data-message-id', data.id);
+            
+            // 본인 메시지인 경우 'own' 클래스 추가
+            if (data.username === currentUser) {
+                messageDiv.classList.add('own');
+            }
+            
+            // 이전 메시지면 약간 다른 색상으로 구분 (선택사항)
+            const userColor = data.isPrevious ? '#ff9900' : '#ff6600';
+            
+            // 시간 표시: 이전 메시지는 원본 시간, 새 메시지는 formatTime 사용
+            let timeDisplay;
+            if (data.isPrevious === true) {
+                // 이전 메시지: 원본 timestamp를 직접 포맷
+                console.log('🕐 Formatting previous message time:', data.timestamp);
+                const messageTime = new Date(data.timestamp);
+                timeDisplay = messageTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                console.log('🕐 Formatted time for previous message:', timeDisplay);
+            } else {
+                // 새 메시지: formatTime 함수 사용
+                console.log('🕐 Formatting new message time:', data.timestamp);
+                timeDisplay = formatTime(data.timestamp);
+                console.log('🕐 Formatted time for new message:', timeDisplay);
+            }
+            
+            // 파일 첨부 여부 확인
+            let fileContent = '';
+            if (data.fileData) {
+                const file = data.fileData;
+                const isImage = file.originalname.match(/\.(jpg|jpeg|png|gif)$/i);
+                const isAudio = file.originalname.match(/\.(mp3|wav|ogg|m4a|webm)$/i);
+                const downloadDisabled = file.downloadDisabled;
+                
+                if (isImage) {
+                    const downloadButton = downloadDisabled 
+                        ? '' // 다운로드 비활성화 시 버튼 없음
+                        : `<a href="/download/${file.filename}" class="download-btn" download>DOWNLOAD</a>`;
+                    
+                    fileContent = `
+                        <div class="message-file">
+                            <img src="${file.url}" alt="${file.originalname}" onclick="window.open('${file.url}', '_blank')">
+                            <div class="file-info">${file.originalname}</div>
+                            ${downloadButton ? `<div class="file-controls">${downloadButton}</div>` : ''}
+                        </div>
+                    `;
+                } else if (isAudio) {
+                    const downloadButton = downloadDisabled 
+                        ? '' // 다운로드 비활성화 시 버튼 없음
+                        : `<a href="/download/${file.filename}" class="download-btn" download>DOWNLOAD</a>`;
+                    
+                    fileContent = `
+                        <div class="message-file">
+                            <div class="file-info">🎵 ${file.originalname} (${formatFileSize(file.size)})</div>
+                            <audio controls ${downloadDisabled ? 'controlslist="nodownload"' : ''}>
+                                <source src="${file.url}" type="audio/mpeg">
+                                브라우저에서 오디오를 지원하지 않습니다.
+                            </audio>
+                            ${downloadButton ? `<div class="file-controls">${downloadButton}</div>` : ''}
+                        </div>
+                    `;
+                }
+            }
+            
+            // 삭제 버튼 (본인 메시지에만 표시)
+            const deleteButton = data.username === currentUser ? 
+                `<button class="delete-btn" onclick="deleteMessage('${data.id}')">DEL</button>` : '';
+            
+            messageDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid ${userColor}; padding: 5px 0;">
+                    <span style="color: ${userColor}; font-size: 10px;">USER: ${data.username}</span>
+                    <div style="display: flex; align-items: center;">
+                        <span style="color: ${userColor}; font-size: 10px;">TIME: ${timeDisplay}</span>
+                        ${deleteButton}
+                    </div>
+                </div>
+                <div class="message-content">${escapeHtml(data.message)}</div>
+                ${fileContent}
+            `;
+            messagesDiv.appendChild(messageDiv);
+        }
+
+        // 파일 크기 포맷팅
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 로그인 처리
+        joinButton.addEventListener('click', () => {
+            const username = usernameInput.value.trim().toUpperCase();
+            if (username) {
+                currentUser = username;
+                userRole = adminUsers.includes(username) ? 'admin' : 'member';
+                
+                currentUserSpan.textContent = username;
+                userRoleSpan.textContent = userRole === 'admin' ? '[ADMIN]' : '[MEMBER]';
+                userRoleSpan.style.color = userRole === 'admin' ? '#ff0000' : '#ffff00';
+                
+                // 권한에 따라 CREATE ROOM 버튼 표시
+                if (userRole === 'admin') {
+                    createSection.style.display = 'block';
+                }
+                
+                socket.emit('user join', { username, role: userRole });
+                loginModal.style.display = 'none';
+                loadRoomList();
+            }
+        });
+
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinButton.click();
+            }
+        });
+
+        // 방 목록 로드
+        function loadRoomList() {
+            socket.emit('get room list');
+        }
+
+        // 방 생성
+        createRoomBtn.addEventListener('click', () => {
+            if (userRole === 'admin') {
+                const roomName = prompt('방 이름을 입력하세요:');
+                if (roomName && roomName.trim()) {
+                    const maxUsers = prompt('최대 인원 수를 입력하세요 (1-100):');
+                    const maxUsersNum = parseInt(maxUsers);
+                    
+                    if (maxUsersNum && maxUsersNum >= 1 && maxUsersNum <= 100) {
+                        // 비밀번호 설정 여부 묻기
+                        const usePassword = confirm('이 방에 비밀번호를 설정하시겠습니까?');
+                        let password = null;
+                        
+                        if (usePassword) {
+                            password = prompt('방 비밀번호를 입력하세요:');
+                            if (!password || !password.trim()) {
+                                alert('비밀번호를 입력해주세요.');
+                                return;
+                            }
+                        }
+                        
+                        socket.emit('create room', { 
+                            roomName: roomName.trim(),
+                            maxUsers: maxUsersNum,
+                            password: password ? password.trim() : null
+                        });
+                    } else if (maxUsers === null) {
+                        // 취소한 경우 아무것도 하지 않음
+                    } else {
+                        alert('올바른 인원 수를 입력하세요 (1-100)');
+                    }
+                }
+            }
+        });
+
+        // 방 참여
+        function joinRoom(roomName) {
+            console.log(`🚀 Joining room: ${roomName}`);
+            socket.emit('join room', { roomName });
+        }
+
+        // 비밀번호가 필요한 방 참여
+        function joinRoomWithPassword(roomName) {
+            const password = prompt(`방 "${roomName}"의 비밀번호를 입력하세요:`);
+            if (password !== null) { // 취소하지 않았을 때
+                socket.emit('join room', { roomName, password: password.trim() });
+            }
+        }
+
+        // 로비로 돌아가기
+        backToLobbyBtn.addEventListener('click', () => {
+            if (currentRoom) {
+                socket.emit('leave room', { roomName: currentRoom });
+                currentRoom = '';
+            }
+            chatView.style.display = 'none';
+            lobbyView.style.display = 'block';
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            fileInput.disabled = true;
+            fileBtn.disabled = true;
+            selectedFile = null;
+            filePreview.textContent = '';
+            loadRoomList();
+        });
+
+        // 파일 업로드 기능
+        fileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // 파일 크기 체크 (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기가 10MB를 초과합니다.');
+                    return;
+                }
+                
+                selectedFile = file;
+                filePreview.textContent = `📎 ${file.name}`;
+                uploadOptions.classList.add('show');
+                fileUploadSection.classList.add('has-file');
+                console.log('📁 File selected:', file.name, formatFileSize(file.size));
+            } else {
+                uploadOptions.classList.remove('show');
+                fileUploadSection.classList.remove('has-file');
+            }
+        });
+
+        // 메시지 전송 (파일 포함)
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if ((!message && !selectedFile) || !currentRoom) {
+                return;
+            }
+
+            let fileData = null;
+            
+            // 파일이 선택된 경우 업로드
+            if (selectedFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('downloadDisabled', downloadDisableCheckbox.checked); // 다운로드 비활성화 여부 추가
+                    
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        fileData = await response.json();
+                        console.log('📤 File uploaded successfully:', fileData);
+                    } else {
+                        const error = await response.text();
+                        alert('파일 업로드 실패: ' + error);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('❌ Upload error:', error);
+                    alert('파일 업로드 중 오류가 발생했습니다.');
+                    return;
+                }
+            }
+            
+            // 메시지 전송
+            socket.emit('chat message', { 
+                roomName: currentRoom, 
+                message: message || '',
+                fileData: fileData
+            });
+            
+            // 입력 필드 초기화
+            messageInput.value = '';
+            selectedFile = null;
+            filePreview.textContent = '';
+            fileInput.value = '';
+            uploadOptions.classList.remove('show');
+            fileUploadSection.classList.remove('has-file');
+            downloadDisableCheckbox.checked = false;
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Socket 이벤트 리스너들
+        socket.on('room list', (rooms) => {
+            leftColumn.innerHTML = '';
+            rightColumn.innerHTML = '';
+            
+            // 방 목록을 알파벳 순으로 정렬
+            const sortedRooms = rooms.sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedRooms.forEach((room, index) => {
+                const roomDiv = document.createElement('div');
+                roomDiv.className = 'chat-room';
+                
+                // 비밀번호 보호 방인지 확인 (단, 현재 사용자가 방장이면 비밀번호 무시)
+                if (room.hasPassword && room.creator !== currentUser) {
+                    roomDiv.onclick = () => joinRoomWithPassword(room.name);
+                } else {
+                    roomDiv.onclick = () => joinRoom(room.name);
+                }
+                
+                // 마지막 메시지 시간차 계산 (상대적 시간)
+                const lastMessageTime = room.lastMessageTime ? getTimeAgo(room.lastMessageTime) : 'now';
+                
+                // 비밀번호 아이콘 표시 (방장에게는 👑 표시)
+                let roomIcon = '';
+                if (room.creator === currentUser) {
+                    roomIcon = ' 👑'; // 방장 표시
+                } else if (room.hasPassword) {
+                    roomIcon = ' 🔒'; // 비밀번호 방 표시
+                }
+                
+                roomDiv.innerHTML = `
+                    <span class="chat-title">${room.name}${roomIcon}</span>
+                    <span class="chat-time">${lastMessageTime}</span>
+                    <div class="preview">
+                        [System] 방에 ${room.userCount}명이 있습니다.
+                        ${room.creator === currentUser ? '[Owner] 당신이 만든 방입니다.' : ''}
+                        ${room.hasPassword && room.creator !== currentUser ? '[Private] 비밀번호로 보호된 방입니다.' : ''}
+                        ${room.lastMessage && (!room.hasPassword || room.creator === currentUser) ? '[Preview] ' + room.lastMessage : (!room.hasPassword || room.creator === currentUser) ? '[System] 최근 활동이 있었습니다.' : ''}
+                    </div>
+                `;
+                
+                // 알파벳 순서에 따라 짝수는 왼쪽, 홀수는 오른쪽
+                if (index % 2 === 0) {
+                    leftColumn.appendChild(roomDiv);
+                } else {
+                    rightColumn.appendChild(roomDiv);
+                }
+            });
+        });
+
+        socket.on('room created', (data) => {
+            const passwordText = data.hasPassword ? ' (비밀번호 보호)' : '';
+            addSystemMessage(`ROOM "${data.roomName}" CREATED (MAX: ${data.maxUsers || '∞'})${passwordText}`);
+            loadRoomList();
+        });
+
+        socket.on('room join success', (data) => {
+            currentRoom = data.roomName;
+            lobbyView.style.display = 'none';
+            chatView.style.display = 'flex';
+            currentRoomNameSpan.textContent = data.roomName;
+            
+            // 최대 인원 수 표시
+            const maxUsersDisplay = data.maxUsers ? `/${data.maxUsers}` : '';
+            roomUserCountSpan.setAttribute('data-max-users', maxUsersDisplay);
+            roomUserCountSpan.textContent = `${data.userCount}${maxUsersDisplay}`;
+            
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            fileInput.disabled = false;
+            fileBtn.disabled = false;
+            messageInput.focus();
+            
+            // 메시지 영역 초기화
+            messagesDiv.innerHTML = '';
+        });
+
+        socket.on('room join error', (data) => {
+            alert(data.message);
+        });
+
+        socket.on('user joined room', (data) => {
+            addSystemMessage(`${data.username} JOINED THE ROOM`);
+            const maxUsersDisplay = roomUserCountSpan.getAttribute('data-max-users') || '';
+            roomUserCountSpan.textContent = `${data.userCount}${maxUsersDisplay}`;
+        });
+
+        socket.on('user left room', (data) => {
+            addSystemMessage(`${data.username} LEFT THE ROOM`);
+            const maxUsersDisplay = roomUserCountSpan.getAttribute('data-max-users') || '';
+            roomUserCountSpan.textContent = `${data.userCount}${maxUsersDisplay}`;
+        });
+
+        function addSystemMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'system-message';
+            messageDiv.textContent = `>>> ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // 페이지 로드 시 사용자명 입력 포커스
+        window.addEventListener('load', () => {
+            usernameInput.focus();
+        });
+    </script>
+</body>
+</html>
