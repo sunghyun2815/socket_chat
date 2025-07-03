@@ -21,7 +21,7 @@ if (!fs.existsSync(musicDir)) {
     fs.mkdirSync(musicDir);
 }
 
-// Multer 설정 (일반 파일 업로드 - 채팅용) - 수정된 부분
+// Multer 설정 (일반 파일 업로드 - 채팅용)
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/');
@@ -49,7 +49,6 @@ const upload = multer({
         fileSize: 50 * 1024 * 1024 // 50MB 제한으로 증가
     },
     fileFilter: function (req, file, cb) {
-        // 더 관대한 파일 타입 허용 및 오디오 MIME 타입 체크 개선
         const allowedTypes = /jpeg|jpg|png|gif|mp3|wav|ogg|m4a|webm|flac|aac|mpeg/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype) || 
@@ -96,7 +95,7 @@ const musicUpload = multer({
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// 기존 파일 업로드 라우트 (채팅용) - 에러 처리 개선
+// 기존 파일 업로드 라우트 (채팅용)
 app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         console.error('❌ No file uploaded');
@@ -180,7 +179,6 @@ app.get('/stream/:filename', (req, res) => {
     const range = req.headers.range;
     
     if (range) {
-        // 범위 요청 (스트리밍)
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
@@ -195,7 +193,6 @@ app.get('/stream/:filename', (req, res) => {
         res.writeHead(206, head);
         file.pipe(res);
     } else {
-        // 전체 파일
         const head = {
             'Content-Length': fileSize,
             'Content-Type': 'audio/mpeg',
@@ -205,7 +202,7 @@ app.get('/stream/:filename', (req, res) => {
     }
 });
 
-// 에러 핸들링 미들웨어 추가
+// 에러 핸들링 미들웨어
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
         console.error('❌ Multer error:', error);
@@ -445,7 +442,7 @@ io.on('connection', (socket) => {
         socket.emit('delete success', { messageId });
     });
 
-    // === 새로운 음악룸 기능들 ===
+    // === 음악룸 기능들 (클라이언트 코드와 매칭) ===
 
     // 음악룸 목록 요청
     socket.on('get music room list', () => {
@@ -453,9 +450,10 @@ io.on('connection', (socket) => {
             id: room.id,
             name: room.name,
             description: room.description,
-            userCount: room.users.size,
+            participants: room.users.size,
+            musicCount: room.playlist.length,
             maxUsers: room.maxUsers,
-            trackCount: room.playlist.length,
+            status: room.users.size > 0 ? 'active' : 'inactive',
             creator: room.creator,
             genres: room.genres,
             currentTrack: room.currentTrack,
@@ -463,23 +461,24 @@ io.on('connection', (socket) => {
             createdAt: room.createdAt
         }));
         
+        console.log('📋 Sending music room list:', musicRoomList);
         socket.emit('music room list', musicRoomList);
     });
 
     // 음악룸 생성
     socket.on('create music room', (data) => {
-        const { roomName, description, maxUsers, genres } = data;
-        const roomId = roomName.toLowerCase().replace(/\s+/g, '-');
+        const { roomName, description, maxUsers, genres, type } = data;
+        const roomId = roomName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
         
         if (!musicRooms.has(roomId)) {
-            musicRooms.set(roomId, {
+            const newRoom = {
                 id: roomId,
                 name: roomName,
-                description: description,
+                description: description || 'Collaborative music workspace',
                 users: new Set(),
-                maxUsers: maxUsers || 20,
+                maxUsers: maxUsers || 10,
                 creator: currentUser,
-                genres: genres || [],
+                genres: genres || ['Electronic', 'Hip-Hop', 'Rock'],
                 playlist: [],
                 currentTrack: null,
                 currentTrackIndex: 0,
@@ -488,20 +487,48 @@ io.on('connection', (socket) => {
                 messages: [],
                 votes: new Map(),
                 createdAt: Date.now()
-            });
+            };
+            
+            musicRooms.set(roomId, newRoom);
             
             console.log(`🎵 음악룸 생성: ${roomName} (최대 ${maxUsers}명) by ${currentUser}`);
-            socket.emit('music room created', { 
-                roomId,
-                roomName, 
-                maxUsers,
-                description
+            
+            // 방 생성자에게 즉시 생성된 방 정보 전송
+            socket.emit('music room created', {
+                id: roomId,
+                name: roomName,
+                description: newRoom.description,
+                participants: 0,
+                musicCount: 0,
+                maxUsers: maxUsers || 10,
+                status: 'active',
+                creator: currentUser,
+                genres: newRoom.genres,
+                createdAt: newRoom.createdAt
             });
             
-            // 음악룸 목록 업데이트를 모든 클라이언트에게 전송
-            io.emit('music room list update');
+            // 방 생성자에게 업데이트된 방 목록 즉시 전송
+            const musicRoomList = Array.from(musicRooms.values()).map(room => ({
+                id: room.id,
+                name: room.name,
+                description: room.description,
+                participants: room.users.size,
+                musicCount: room.playlist.length,
+                maxUsers: room.maxUsers,
+                status: room.users.size > 0 ? 'active' : 'inactive',
+                creator: room.creator,
+                genres: room.genres,
+                currentTrack: room.currentTrack,
+                isPlaying: room.isPlaying,
+                createdAt: room.createdAt
+            }));
+            
+            socket.emit('music room list', musicRoomList);
+            
+            // 다른 모든 클라이언트에게 방 목록 업데이트 알림
+            socket.broadcast.emit('music room list update');
         } else {
-            socket.emit('music room error', { message: '이미 존재하는 음악룸 이름입니다.' });
+            socket.emit('music room join error', { message: '이미 존재하는 음악룸 이름입니다.' });
         }
     });
 
@@ -511,12 +538,12 @@ io.on('connection', (socket) => {
         const room = musicRooms.get(roomId);
         
         if (!room) {
-            socket.emit('music room error', { message: '존재하지 않는 음악룸입니다.' });
+            socket.emit('music room join error', { message: '존재하지 않는 음악룸입니다.' });
             return;
         }
 
         if (room.users.size >= room.maxUsers) {
-            socket.emit('music room error', { message: `음악룸이 가득 찼습니다. (${room.maxUsers}/${room.maxUsers})` });
+            socket.emit('music room join error', { message: `음악룸이 가득 찼습니다. (${room.maxUsers}/${room.maxUsers})` });
             return;
         }
 
@@ -557,16 +584,9 @@ io.on('connection', (socket) => {
             userCount: room.users.size
         });
         
-        // 현재 플레이리스트 전송
-        socket.emit('playlist update', { 
-            playlist: room.playlist,
-            currentTrack: room.currentTrack,
-            isPlaying: room.isPlaying
-        });
-        
         // 이전 채팅 메시지들 전송
         room.messages.forEach(message => {
-            socket.emit('music room chat', {
+            socket.emit('music chat message', {
                 ...message,
                 isPrevious: true
             });
@@ -593,6 +613,61 @@ io.on('connection', (socket) => {
         currentMusicRoom = '';
     });
 
+    // 음악룸 채팅 메시지
+    socket.on('music chat message', (data) => {
+        const { roomId, message, user, timestamp } = data;
+        const room = musicRooms.get(roomId);
+        
+        if (room && room.users.has(socket.id)) {
+            const messageData = {
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                roomId: roomId,
+                user: user || currentUser,
+                message: message,
+                timestamp: timestamp || Date.now(),
+                time: new Date().toISOString(),
+                isPrevious: false
+            };
+            
+            room.messages.push(messageData);
+            
+            // 메시지 개수 제한
+            if (room.messages.length > 100) {
+                room.messages = room.messages.slice(-100);
+            }
+            
+            console.log(`💬 [Music Room: ${room.name}] ${currentUser}: ${message}`);
+            
+            // 룸의 모든 사용자에게 전송
+            io.to(roomId).emit('music chat message', messageData);
+        }
+    });
+
+    // 음성 메시지 (음악룸)
+    socket.on('music voice message', (data) => {
+        const { roomId, user, timestamp, audioUrl } = data;
+        const room = musicRooms.get(roomId);
+        
+        if (room && room.users.has(socket.id)) {
+            const voiceData = {
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                roomId: roomId,
+                user: user || currentUser,
+                timestamp: timestamp || Date.now(),
+                audioUrl: audioUrl,
+                time: new Date().toISOString(),
+                isPrevious: false
+            };
+            
+            room.messages.push(voiceData);
+            
+            console.log(`🎤 [Music Room: ${room.name}] ${currentUser}: voice message`);
+            
+            // 룸의 모든 사용자에게 전송
+            io.to(roomId).emit('music chat message', voiceData);
+        }
+    });
+
     // 음악 업로드 및 플레이리스트 추가
     socket.on('music uploaded', (data) => {
         const { roomId, musicData } = data;
@@ -607,7 +682,7 @@ io.on('connection', (socket) => {
                 url: musicData.url,
                 uploader: currentUser,
                 uploadTime: Date.now(),
-                duration: '0:00', // 실제로는 음악 파일 분석 필요
+                duration: '0:00',
                 votes: 0,
                 voters: new Set()
             };
@@ -616,28 +691,29 @@ io.on('connection', (socket) => {
             
             console.log(`🎵 Music added to ${room.name}: ${trackData.title} by ${currentUser}`);
             
-            // 플레이리스트 업데이트를 룸의 모든 사용자에게 전송
+            // 플레이리스트 업데이트
             io.to(roomId).emit('playlist update', { 
                 playlist: room.playlist,
                 currentTrack: room.currentTrack,
                 isPlaying: room.isPlaying
             });
             
-            // 채팅에 시스템 메시지 추가
+            // 시스템 메시지 추가
             const systemMessage = {
                 id: Date.now() + '_system',
                 type: 'system',
-                username: 'SYSTEM',
+                user: 'SYSTEM',
                 message: `${currentUser} uploaded "${trackData.title}"`,
-                timestamp: new Date().toISOString()
+                timestamp: Date.now(),
+                time: new Date().toISOString()
             };
             
             room.messages.push(systemMessage);
-            io.to(roomId).emit('music room chat', systemMessage);
+            io.to(roomId).emit('music chat message', systemMessage);
         }
     });
 
-    // 트랙 재생
+    // 트랙 재생 제어
     socket.on('play track', (data) => {
         const { roomId, trackId } = data;
         const room = musicRooms.get(roomId);
@@ -651,24 +727,11 @@ io.on('connection', (socket) => {
                 
                 console.log(`▶️ Now playing in ${room.name}: ${track.title}`);
                 
-                // 모든 사용자에게 재생 상태 동기화
                 io.to(roomId).emit('track changed', {
                     currentTrack: track,
                     isPlaying: true,
                     playStartTime: room.playStartTime
                 });
-                
-                // 채팅에 시스템 메시지
-                const systemMessage = {
-                    id: Date.now() + '_system',
-                    type: 'system',
-                    username: 'SYSTEM',
-                    message: `♪ Now playing: ${track.title}`,
-                    timestamp: new Date().toISOString()
-                };
-                
-                room.messages.push(systemMessage);
-                io.to(roomId).emit('music room chat', systemMessage);
             }
         }
     });
@@ -687,70 +750,10 @@ io.on('connection', (socket) => {
             
             console.log(`${room.isPlaying ? '▶️' : '⏸️'} Playback ${room.isPlaying ? 'resumed' : 'paused'} in ${room.name}`);
             
-            // 재생 상태 동기화
             io.to(roomId).emit('playback toggled', {
                 isPlaying: room.isPlaying,
                 playStartTime: room.playStartTime
             });
-        }
-    });
-
-    // 트랙 투표
-    socket.on('vote track', (data) => {
-        const { roomId, trackId } = data;
-        const room = musicRooms.get(roomId);
-        
-        if (room && room.users.has(socket.id)) {
-            const track = room.playlist.find(t => t.id === trackId);
-            if (track) {
-                // 이미 투표했는지 확인
-                if (!track.voters.has(currentUser)) {
-                    track.voters.add(currentUser);
-                    track.votes += 1;
-                    
-                    console.log(`👍 ${currentUser} voted for "${track.title}" in ${room.name} (${track.votes} votes)`);
-                    
-                    // 플레이리스트 업데이트
-                    io.to(roomId).emit('playlist update', { 
-                        playlist: room.playlist,
-                        currentTrack: room.currentTrack,
-                        isPlaying: room.isPlaying
-                    });
-                    
-                    socket.emit('vote success', { trackId, votes: track.votes });
-                } else {
-                    socket.emit('vote error', { message: '이미 투표한 트랙입니다.' });
-                }
-            }
-        }
-    });
-
-    // 음악룸 채팅
-    socket.on('music room chat message', (data) => {
-        const { roomId, message } = data;
-        const room = musicRooms.get(roomId);
-        
-        if (room && room.users.has(socket.id)) {
-            const messageData = {
-                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                type: 'user',
-                username: currentUser,
-                message: message,
-                timestamp: new Date().toISOString(),
-                isPrevious: false
-            };
-            
-            room.messages.push(messageData);
-            
-            // 메시지 개수 제한
-            if (room.messages.length > 100) {
-                room.messages = room.messages.slice(-100);
-            }
-            
-            console.log(`💬 [Music Room: ${room.name}] ${currentUser}: ${message}`);
-            
-            // 룸의 모든 사용자에게 전송
-            io.to(roomId).emit('music room chat', messageData);
         }
     });
 
